@@ -54,8 +54,8 @@ public class SSDPClient {
         return Collections.unmodifiableList(devices);
     }
 
-    public static List<Device> discoverOne(int timeout, String serviceType) throws IOException {
-        ArrayList<Device> devices = new ArrayList<Device>();
+    public static Device discoverOne(int timeout, String serviceType) throws IOException {
+        Device device;
         byte[] sendData;
         byte[] receiveData = new byte[1024];
 
@@ -77,11 +77,11 @@ public class SSDPClient {
         try {
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
             clientSocket.receive(receivePacket);
-            devices.add(Device.parse(receivePacket));
+            device = Device.parse(receivePacket);
         }
         catch (SocketTimeoutException e) { }
 
         clientSocket.close();
-        return Collections.unmodifiableList(devices);
+        return device;
     }
 }
