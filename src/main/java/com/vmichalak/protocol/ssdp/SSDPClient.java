@@ -55,7 +55,7 @@ public class SSDPClient {
     }
 
     public static Device discoverOne(int timeout, String serviceType) throws IOException {
-        Device device;
+        Device device = null;
         byte[] sendData;
         byte[] receiveData = new byte[1024];
 
