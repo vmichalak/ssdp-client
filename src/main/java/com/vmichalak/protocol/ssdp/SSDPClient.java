@@ -53,4 +53,35 @@ public class SSDPClient {
         clientSocket.close();
         return Collections.unmodifiableList(devices);
     }
+
+    public static List<Device> discoverOne(int timeout, String serviceType) throws IOException {
+        ArrayList<Device> devices = new ArrayList<Device>();
+        byte[] sendData;
+        byte[] receiveData = new byte[1024];
+
+        /* Create the search request */
+        StringBuilder msearch = new StringBuilder(
+                "M-SEARCH * HTTP/1.1\nHost: 239.255.255.250:1900\nMan: \"ssdp:discover\"\n");
+        if (serviceType == null) { msearch.append("ST: ssdp:all\n"); }
+        else { msearch.append("ST: ").append(serviceType).append("\n"); }
+
+        /* Send the request */
+        sendData = msearch.toString().getBytes();
+        DatagramPacket sendPacket = new DatagramPacket(
+                sendData, sendData.length, InetAddress.getByName("239.255.255.250"), 1900);
+        DatagramSocket clientSocket = new DatagramSocket();
+        clientSocket.setSoTimeout(timeout);
+        clientSocket.send(sendPacket);
+
+        /* Receive one response */
+        try {
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            clientSocket.receive(receivePacket);
+            devices.add(Device.parse(receivePacket));
+        }
+        catch (SocketTimeoutException e) { }
+
+        clientSocket.close();
+        return Collections.unmodifiableList(devices);
+    }
 }
