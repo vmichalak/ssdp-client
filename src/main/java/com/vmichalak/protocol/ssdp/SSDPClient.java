@@ -16,21 +16,22 @@ public class SSDPClient {
     /**
      * Discover any UPNP device using SSDP (Simple Service Discovery Protocol).
      * @param timeout in milliseconds
-     * @param serviceType if null it use "ssdp:all"
+     * @param searchTarget if null it use "ssdp:all"
      * @return List of devices discovered
      * @throws IOException
      * @see <a href="https://en.wikipedia.org/wiki/Simple_Service_Discovery_Protocol">SSDP Wikipedia Page</a>
      */
-    public static List<Device> discover(int timeout, String serviceType) throws IOException {
+    public static List<Device> discover(int timeout, String searchTarget) throws IOException {
         ArrayList<Device> devices = new ArrayList<Device>();
         byte[] sendData;
         byte[] receiveData = new byte[1024];
 
         /* Create the search request */
-        StringBuilder msearch = new StringBuilder(
-                "M-SEARCH * HTTP/1.1\nHost: 239.255.255.250:1900\nMan: \"ssdp:discover\"\n");
-        if (serviceType == null) { msearch.append("ST: ssdp:all\n"); }
-        else { msearch.append("ST: ").append(serviceType).append("\n"); }
+        StringBuilder msearch = new StringBuilder("M-SEARCH * HTTP/1.1\nHost: 239.255.255.250:1900\nMAN: ssdp:discover\n");
+        if (searchTarget == null) { msearch.append("ST: ssdp:all\n"); }
+        else { msearch.append("ST: ").append(searchTarget).append("\n"); }
+        if (timeout >= 1000) { msearch.append("MX: " + Math.round(timeout/1000) + "\n"); }
+        msearch.append("\r\n");
 
         /* Send the request */
         sendData = msearch.toString().getBytes();
@@ -45,7 +46,9 @@ public class SSDPClient {
             try {
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 clientSocket.receive(receivePacket);
-                devices.add(Device.parse(receivePacket));
+                if (searchTarget == null || new String(receivePacket.getData()).contains(searchTarget)) {
+                    devices.add(Device.parse(receivePacket));
+                }
             }
             catch (SocketTimeoutException e) { break; }
         }
@@ -54,16 +57,17 @@ public class SSDPClient {
         return Collections.unmodifiableList(devices);
     }
 
-    public static Device discoverOne(int timeout, String serviceType) throws IOException {
+    public static Device discoverOne(int timeout, String searchTarget) throws IOException {
         Device device = null;
         byte[] sendData;
         byte[] receiveData = new byte[1024];
 
         /* Create the search request */
-        StringBuilder msearch = new StringBuilder(
-                "M-SEARCH * HTTP/1.1\nHost: 239.255.255.250:1900\nMan: \"ssdp:discover\"\n");
-        if (serviceType == null) { msearch.append("ST: ssdp:all\n"); }
-        else { msearch.append("ST: ").append(serviceType).append("\n"); }
+        StringBuilder msearch = new StringBuilder("M-SEARCH * HTTP/1.1\nHost: 239.255.255.250:1900\nMAN: ssdp:discover\n");
+        if (searchTarget == null) { msearch.append("ST: ssdp:all\n"); }
+        else { msearch.append("ST: ").append(searchTarget).append("\n"); }
+        if (timeout >= 1000) { msearch.append("MX: " + Math.round(timeout/1000) + "\n"); }
+        msearch.append("\r\n");
 
         /* Send the request */
         sendData = msearch.toString().getBytes();
@@ -73,13 +77,17 @@ public class SSDPClient {
         clientSocket.setSoTimeout(timeout);
         clientSocket.send(sendPacket);
 
-        /* Receive one response */
-        try {
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            clientSocket.receive(receivePacket);
-            device = Device.parse(receivePacket);
-        }
-        catch (SocketTimeoutException e) { }
+        /* Receive all responses, but pick first matching... */
+        do {
+            try {
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                clientSocket.receive(receivePacket);
+                if (searchTarget == null || new String(receivePacket.getData()).contains(searchTarget)) {
+                    device = Device.parse(receivePacket);
+                }
+            }
+            catch (SocketTimeoutException e) { break; }
+        } while(device == null);
 
         clientSocket.close();
         return device;
