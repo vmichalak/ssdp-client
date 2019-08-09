@@ -30,13 +30,12 @@ public class SSDPClient {
         StringBuilder msearch = new StringBuilder("M-SEARCH * HTTP/1.1\nHost: 239.255.255.250:1900\nMAN: ssdp:discover\n");
         if (searchTarget == null) { msearch.append("ST: ssdp:all\n"); }
         else { msearch.append("ST: ").append(searchTarget).append("\n"); }
-        if (timeout >= 1000) { msearch.append("MX: " + Math.round(timeout/1000) + "\n"); }
+        if (timeout >= 1100) { msearch.append("MX: " + Math.floor((timeout-100)/1000) + "\n"); }  // give devices 100ms to respond (in the worst case)
         msearch.append("\r\n");
 
         /* Send the request */
         sendData = msearch.toString().getBytes();
-        DatagramPacket sendPacket = new DatagramPacket(
-                sendData, sendData.length, InetAddress.getByName("239.255.255.250"), 1900);
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("239.255.255.250"), 1900);
         DatagramSocket clientSocket = new DatagramSocket();
         clientSocket.setSoTimeout(timeout);
         clientSocket.send(sendPacket);
@@ -66,13 +65,12 @@ public class SSDPClient {
         StringBuilder msearch = new StringBuilder("M-SEARCH * HTTP/1.1\nHost: 239.255.255.250:1900\nMAN: ssdp:discover\n");
         if (searchTarget == null) { msearch.append("ST: ssdp:all\n"); }
         else { msearch.append("ST: ").append(searchTarget).append("\n"); }
-        if (timeout >= 1000) { msearch.append("MX: " + Math.round(timeout/1000) + "\n"); }
+        if (timeout >= 1100) { msearch.append("MX: " + Math.floor((timeout-100)/1000) + "\n"); }  // give devices 100ms to respond (in the worst case)
         msearch.append("\r\n");
 
         /* Send the request */
         sendData = msearch.toString().getBytes();
-        DatagramPacket sendPacket = new DatagramPacket(
-                sendData, sendData.length, InetAddress.getByName("239.255.255.250"), 1900);
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("239.255.255.250"), 1900);
         DatagramSocket clientSocket = new DatagramSocket();
         clientSocket.setSoTimeout(timeout);
         clientSocket.send(sendPacket);
