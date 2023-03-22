@@ -2,12 +2,10 @@ package com.vmichalak.protocol.ssdp;
 
 import java.net.DatagramPacket;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Represent a Device discovered by SSDP.
- */
 public class Device {
     private final String ip;
     private final String descriptionUrl;
@@ -23,33 +21,30 @@ public class Device {
         this.usn = usn;
     }
 
-    /**
-     * Instantiate a new Device Object from a SSDP discovery response packet.
-     * @param ssdpResult SSDP Discovery Response packet.
-     * @return Device
-     */
-    public static Device parse(DatagramPacket ssdpResult) {
-        HashMap<String, String> headers = new HashMap<String, String>();
-        Pattern pattern = Pattern.compile("(.*): (.*)");
+    public static Device parse(final DatagramPacket ssdpResult) {
+        if(ssdpResult == null)
+            return null;
 
-        String[] lines = new String(ssdpResult.getData()).split("\r\n");
+        final HashMap<String, String> headers = new HashMap<>();
+        final Pattern pattern = Pattern.compile("(.*): (.*)");
 
-        for (String line : lines) {
-            Matcher matcher = pattern.matcher(line);
-            if(matcher.matches()) {
+        final String[] lines = new String(ssdpResult.getData()).split("\r\n");
+        for (final String line : lines) {
+            final Matcher matcher = pattern.matcher(line);
+            if (matcher.matches()) {
                 headers.put(matcher.group(1).toUpperCase(), matcher.group(2));
             }
         }
 
         return new Device(
                 ssdpResult.getAddress().getHostAddress(),
-                headers.get("LOCATION"),
-                headers.get("SERVER"),
-                headers.get("ST"),
-                headers.get("USN"));
+                headers.getOrDefault("LOCATION", ""),
+                headers.getOrDefault("SERVER", ""),
+                headers.getOrDefault("ST", ""),
+                headers.getOrDefault("USN", ""));
     }
 
-    public String getIPAddress() {
+    public String getIp() {
         return ip;
     }
 
@@ -65,33 +60,36 @@ public class Device {
         return serviceType;
     }
 
-    public String getUSN() {
+    public String getUsn() {
         return usn;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+
+        if (!(o instanceof Device)) {
+            return false;
+        }
 
         Device device = (Device) o;
 
-        if (ip != null ? !ip.equals(device.ip) : device.ip != null) return false;
-        if (descriptionUrl != null ? !descriptionUrl.equals(device.descriptionUrl) : device.descriptionUrl != null)
-            return false;
-        if (server != null ? !server.equals(device.server) : device.server != null) return false;
-        if (serviceType != null ? !serviceType.equals(device.serviceType) : device.serviceType != null) return false;
-        return usn != null ? usn.equals(device.usn) : device.usn == null;
-
+        return Objects.equals(ip, device.ip)
+                && Objects.equals(descriptionUrl, device.descriptionUrl)
+                && Objects.equals(server, device.server)
+                && Objects.equals(serviceType, device.serviceType)
+                && Objects.equals(usn, device.usn);
     }
 
     @Override
     public int hashCode() {
-        int result = ip != null ? ip.hashCode() : 0;
-        result = 31 * result + (descriptionUrl != null ? descriptionUrl.hashCode() : 0);
-        result = 31 * result + (server != null ? server.hashCode() : 0);
-        result = 31 * result + (serviceType != null ? serviceType.hashCode() : 0);
-        result = 31 * result + (usn != null ? usn.hashCode() : 0);
+        int result = Objects.hashCode(ip);
+        result = 31 * result + Objects.hashCode(descriptionUrl);
+        result = 31 * result + Objects.hashCode(server);
+        result = 31 * result + Objects.hashCode(serviceType);
+        result = 31 * result + Objects.hashCode(usn);
         return result;
     }
 
